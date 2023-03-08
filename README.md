@@ -1,81 +1,139 @@
-# Lab4
- 
-/*
-* ECE 3223 Assignment 5
-* Nhi Luong 4/22/23
-*
-*/
+#define FIO0DIR (*(volatile unsigned int *)0x2009c000)
+#define FIO0PIN (*(volatile unsigned int *)0x2009c014)
+#define PINSEL1 (*(volatile unsigned int *)0x4002C004)
+#define PCLKSEL0 (*(volatile unsigned int *)0x400FC1A8)
+#define I2C0SCLH (*(volatile unsigned int *)0x4001C010)
+#define I2C0SCLL (*(volatile unsigned int *)0x4001C014)
+#define I2C0CONSET (*(volatile unsigned int *)0x4001C000)
+#define I2C0CONCLR (*(volatile unsigned int *)0x4001C018)
+#define I2C0DAT (*(volatile unsigned int *)0x4001C008)
+#define I2C0STAT (*(volatile unsigned int *)0x4001C004)
+#define IODIRA (*(volatile unsigned int *)0x00)
+#define IODIRB (*(volatile unsigned int *)0x01)
+#define GPIOA (*(volatile unsigned int *)0x12)
+#define GPIOB (*(volatile unsigned int *)0x13)
+#define Temp (*(volatile unsigned int *)0x00)
 
-#include "mbed.h"
 
-DigitalIn L1up(p24,PullDown); // active high
-DigitalIn L1down(p23,PullDown); // active high
-DigitalIn L2up(p22,PullDown); // active high
-DigitalIn L2down(p21,PullDown); // active high
 
-I2C i2c(p9,p10); // SDA,SCL
+ void wait() {
+	 
+ }
 
-int i2cWrite(int addr, int data) {
-    int ack;
-    
-    i2c.start();
-    ack = i2c.write(0b10100000); // address: 1010XXX, r/w = 0 (write)
+void i2cStart() {
 
-    // check 1st ack
-    if (!ack) {
-        return 0;
-    }
+	I2C0CONSET = (1<<3);
+	I2C0CONSET = (1<<5);
+	I2C0CONCLR = (1<<3);
 
-    i2c.write(addr); // address inside the chip
-    i2c.write(data); // data to store
-    i2c.stop();
-    
-    wait_ms(7); // wait for write to complete (wait cycle: 5ms)
-    
-    return 1;
+	while ((I2C0CONSET >> 3) & 1 != 1) {
+		I2C0CONCLR = (1<<5);
+	}
+
 }
 
-int i2cRead(int addr) {
-    int ack, data;
-    
-    i2c.start();
-    ack = i2c.write(0b10100000);
+int i2cStop() {
 
-    // check ack after intial selecting
-    if (!ack) { 
-        return -1;
-    }
+	I2C0CONSET = (1<<4);
+	I2C0CONCLR = (1<<3);
+	
+	while ((I2C0CONSET >> 4) & 1 = 1) {
+	}
 
-    i2c.write(addr); // select location to read from
-    i2c.start();
-    i2c.write(0b10100001); // address: 1010XXX, r/w = 1 (read)
-    data = i2c.read(0);
-    i2c.stop();
-    
-    return data;
+}
+
+void i2cWrite(int data) {
+
+	I2C0DAT = data;
+	I2C0CONCLR = (1<<3);
+
+	while ((I2C0CONSET >> 3) & 1 != 1) {
+			I2C0CONCLR = (1<<5);
+	}
+
+
+}
+
+int i2cRead(int read) {
+
+	if (read) {
+			I2C0CONCLR = (1<<2);
+		} else {
+			I2C0CONSET = (1<<2);
+		}
+
+	I2C0CONCLR = (1<<3);
+
+
+	while ((I2C0CONSET >> 3) & 1 != 1) {
+		I2C0CONCLR = (1<<5);
+	}
+
+	int save = I2C0DAT;
+
+	return save;
+
+}
+
+void pinConfig() {
+	
+	PINSEL1 |= (1<<22); 
+	PINSEL1 &= ~(1<<23);
+	PINSEL1 |= (1<<24); 
+	PINSEL1 &= ~(1<<25);
+	
+
+	
 }
 
 int main() {
-  
-    int L1U; // switch states
-   
-    while(1) {        
-        // read switch states only once per loop
-        L1U = L1up; L1D = L1down;
-        L2U = L2up; L2D = L2down;
-        
-        // L1up: increases LED1 brightness (0%-100% in steps of 20% per press)
-        // L1down: decreases LED1 brightness (100%-0% in steps of 20% per press)
-        if (L1U == 1 && b1 < MAX_BRIGHTNESS) {
-            b1 += 1;
-            led1 = b1 * STEP;
-            i2cWrite(0, b1); 
-            wait(0.5);
-        } else if (L1D == 1 && b1 > MIN_BRIGHTNESS) {
-            b1 -= 1;
-            led1 = b1 * STEP;
-            i2cWrite(0, b1);
-            wait(0.5);
-        }
+
+	pinConfig();
+	
+    while(1) {
+
+    	// read 
+    	start();
+    	i2cWrite(i2cRead(1));
+    	
       }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
