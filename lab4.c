@@ -1,83 +1,92 @@
 // Lab 4
+// Port 0 registers
+#define FIO0DIR (*(volatile unsigned int *)0x2009c000)
+#define FIO0PIN (*(volatile unsigned int *)0x2009c014)
+#define PINSEL1 (*(volatile unsigned int *)0x4002C004)
+// I2C registers
+#define PCLKSEL0 (*(volatile unsigned int *)0x400FC1A8)
+#define I2C0SCLH (*(volatile unsigned int *)0x4001C010)
+#define I2C0SCLL (*(volatile unsigned int *)0x4001C014)
+#define I2C0CONSET (*(volatile unsigned int *)0x4001C000)
+#define I2C0CONCLR (*(volatile unsigned int *)0x4001C018)
+#define I2C0DAT (*(volatile unsigned int *)0x4001C008)
+#define I2C0STAT (*(volatile unsigned int *)0x4001C004)
+// MCP23017 registers
+#define IODIRA (*(volatile unsigned int *)0x00)
+#define IODIRB (*(volatile unsigned int *)0x01)
+#define GPIOA (*(volatile unsigned int *)0x12)
+#define GPIOB (*(volatile unsigned int *)0x13)
+// Temperature sensor registers
+#define Temp (*(volatile unsigned int *)0x00)
 
-
-
-/*
-* ECE 3223 Assignment 5
-* Nhi Luong 4/22/23
-*
-*/
-
-#include "mbed.h"
-
-DigitalIn L1up(p24,PullDown); // active high
-DigitalIn L1down(p23,PullDown); // active high
-DigitalIn L2up(p22,PullDown); // active high
-DigitalIn L2down(p21,PullDown); // active high
-
-I2C i2c(p9,p10); // SDA,SCL
-
-int i2cWrite(int addr, int data) {
-    int ack;
-    
-    i2c.start();
-    ack = i2c.write(0b10100000); // address: 1010XXX, r/w = 0 (write)
-
-    // check 1st ack
-    if (!ack) {
-        return 0;
-    }
-
-    i2c.write(addr); // address inside the chip
-    i2c.write(data); // data to store
-    i2c.stop();
-    
-    wait_ms(7); // wait for write to complete (wait cycle: 5ms)
-    
-    return 1;
+// pin configuration for LPC1769
+void pinConfig() {	
+	PINSEL1 |= (1<<22); 
+	PINSEL1 &= ~(1<<23);
+	PINSEL1 |= (1<<24); 
+	PINSEL1 &= ~(1<<25);	
 }
 
-int i2cRead(int addr) {
-    int ack, data;
-    
-    i2c.start();
-    ack = i2c.write(0b10100000);
-
-    // check ack after intial selecting
-    if (!ack) { 
-        return -1;
-    }
-
-    i2c.write(addr); // select location to read from
-    i2c.start();
-    i2c.write(0b10100001); // address: 1010XXX, r/w = 1 (read)
-    data = i2c.read(0);
-    i2c.stop();
-    
-    return data;
+// wait function
+ void wait() {
+	 
 }
+
+// start condition
+void i2cStart() {
+	I2C0CONSET = (1<<3); // set SI bit
+	I2C0CONSET = (1<<5); // set STA bit
+	I2C0CONCLR = (1<<3); // clear SI bit
+
+	while ((I2C0CONSET >> 3) & 1 != 1) { // wait for SI bit to return to 0
+	    I2C0CONCLR = (1<<5); // clear STA bit
+	}
+}
+
+// stop condition
+int i2cStop() {
+	I2C0CONSET = (1<<4); // set STO bit
+	I2C0CONCLR = (1<<3); // clear SI bit
+	
+	while ((I2C0CONSET >> 4) & 1 = 1) {} // wait for STO bit to return to 0
+}
+
+// write function
+void i2cWrite(int data) {
+	I2C0DAT = data; // assign data to I2C0DAT reg
+	I2C0CONCLR = (1<<3); // clear SI bit
+
+	while ((I2C0CONSET >> 3) & 1 != 1) { // wait for SI bit to return to 1
+	}
+}
+
+// read function
+int i2cRead(int read) {
+	if (read) { // if final read, clear AA bit
+		I2C0CONCLR = (1<<2);
+	} 
+    else { // otherwise, set it
+		I2C0CONSET = (1<<2);
+	}
+
+	I2C0CONCLR = (1<<3); // clear SI bit
+
+	while ((I2C0CONSET >> 3) & 1 != 1) {} // wait for SI bit to return to 1
+
+	int save = I2C0DAT; // asign value in I2C0DAT to another variable
+	return save;
+}
+
 
 int main() {
-  
-    int L1U; // switch states
-   
-    while(1) {        
-        // read switch states only once per loop
-        L1U = L1up; L1D = L1down;
-        L2U = L2up; L2D = L2down;
-        
-        // L1up: increases LED1 brightness (0%-100% in steps of 20% per press)
-        // L1down: decreases LED1 brightness (100%-0% in steps of 20% per press)
-        if (L1U == 1 && b1 < MAX_BRIGHTNESS) {
-            b1 += 1;
-            led1 = b1 * STEP;
-            i2cWrite(0, b1); 
-            wait(0.5);
-        } else if (L1D == 1 && b1 > MIN_BRIGHTNESS) {
-            b1 -= 1;
-            led1 = b1 * STEP;
-            i2cWrite(0, b1);
-            wait(0.5);
-        }
+
+	pinConfig();
+	
+    while(1) {
+
+    	// read 
+    	start();
+    	i2cWrite(i2cRead(1));
+    	
       }
 }
