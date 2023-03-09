@@ -1,7 +1,5 @@
 // Lab 4
 // Port 0 registers
-#define FIO0DIR (*(volatile unsigned int *)0x2009c000)
-#define FIO0PIN (*(volatile unsigned int *)0x2009c014)
 #define PINSEL1 (*(volatile unsigned int *)0x4002C004)
 // I2C registers
 #define PCLKSEL0 (*(volatile unsigned int *)0x400FC1A8)
@@ -11,11 +9,14 @@
 #define I2C0CONCLR (*(volatile unsigned int *)0x4001C018)
 #define I2C0DAT (*(volatile unsigned int *)0x4001C008)
 #define I2C0STAT (*(volatile unsigned int *)0x4001C004)
+#define T0TCR (*(volatile unsigned int *)0x40004004)
+#define T0TC (*(volatile unsigned int *)0x40004008)
 // MCP23017 registers
 #define IODIRA (*(volatile unsigned int *)0x00)
 #define IODIRB (*(volatile unsigned int *)0x01)
 #define GPIOA (*(volatile unsigned int *)0x12)
 #define GPIOB (*(volatile unsigned int *)0x13)
+#define OPCODE (*(volatile unsigned int *)0b010000)
 // Temperature sensor registers
 #define Temp (*(volatile unsigned int *)0x00)
 
@@ -28,8 +29,13 @@ void pinConfig() {
 }
 
 // wait function
- void wait() {
-	 
+ void wait_us(int us) {
+  int start = T0TC;  // note starting time
+  T0TCR |= (1<<0);   // start timer
+  while ((T0TC-start)<us) {} // wait for time to pass
+}
+void wait(float sec) {
+  wait_us(sec*1000000); // convert seconds to microseconds
 }
 
 // start condition
