@@ -20,13 +20,17 @@
 // Temperature sensor registers
 #define Temp (*(volatile unsigned int *)0x00)
 
-// pin configuration for LPC1769
-void pinConfig() {	
+// configure LPC1769
+void config() {	
 	PINSEL1 |= (1<<22); 
 	PINSEL1 &= ~(1<<23);
 	PINSEL1 |= (1<<24); 
 	PINSEL1 &= ~(1<<25);	
+
+	// asdfasdf
 }
+
+// configure MCP23017
 
 // wait function
  void wait_us(int us) {
@@ -83,10 +87,30 @@ int i2cRead(int read) {
 	return save;
 }
 
+// display numbers function
+int disp(int number) {
+	switch(number) {
+		case 0: return 0b1000000;
+        case 1: return 0b1111001;
+        case 2: return 0b0100100;
+        case 3: return 0b0110000;
+        case 4: return 0b0011001;
+        case 5: return 0b0010010;
+        case 6: return 0b0000010;
+        case 7: return 0b1111000;
+        case 8: return 0b0000000;
+        case 9: return 0b0011000;
+	}
+	return 0b1000000;
+}
 
+// read temperature
+// read switch
 int main() {
+	int write = 0;
+	int read = 1;
 
-	pinConfig();
+	config();
 	
     while(1) {
 
