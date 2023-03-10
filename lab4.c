@@ -16,21 +16,35 @@
 #define IODIRB (*(volatile unsigned int *)0x01)
 #define GPIOA (*(volatile unsigned int *)0x12)
 #define GPIOB (*(volatile unsigned int *)0x13)
-#define OPCODE (*(volatile unsigned int *)0b010000)
+#define MCP_OPCODE (*(volatile unsigned int *)0b0100000)
 // Temperature sensor registers
-#define Temp (*(volatile unsigned int *)0x00)
+#define PCT_TEMP (*(volatile unsigned int *)0x00)
+#define PCT_ADDR (*(volatile unsigned int *)0b1001000)
+// global variables
+const volatile int WRITE = 0;
+const volatile int READ = 1;
 
 // configure LPC1769
-void config() {	
+void configLPC() {
+	// configure SDA0	
 	PINSEL1 |= (1<<22); 
 	PINSEL1 &= ~(1<<23);
+	// configure SCL0
 	PINSEL1 |= (1<<24); 
 	PINSEL1 &= ~(1<<25);	
 
-	// asdfasdf
+	PCLKSEL0 &= ~(1<<14) & ~(1<<15);
+	I2C0SCLL = 5;
+	I2C0SCLH = I2C0SCLL + 1;
+
+	I2C0CONCLR = (1<<6); // clear enable bit
+    I2C0CONSET = (1<<6); // set enable bit
 }
 
 // configure MCP23017
+void configMCP() {
+
+}
 
 // wait function
  void wait_us(int us) {
@@ -49,7 +63,7 @@ void i2cStart() {
 	I2C0CONCLR = (1<<3); // clear SI bit
 
 	while ((I2C0CONSET >> 3) & 1 != 1) { // wait for SI bit to return to 0
-	    I2C0CONCLR = (1<<5); // clear STA bit
+	I2C0CONCLR = (1<<5); // clear STA bit
 	}
 }
 
@@ -87,6 +101,44 @@ int i2cRead(int read) {
 	return save;
 }
 
+// read temperature
+int readTemp(tempData) {
+	int tempC;
+
+	i2cStart(); // start
+	i2cWrite((PCT_ADDR<<1) | WRITE); // address, r/w = 0;
+	i2cWrite(PCT_TEMP); // pointer byte
+	i2cStop(); // stop
+	i2cStart(); // restart
+	i2cWrite((PCT_ADDR<<1) | READ); // address, r/w = 1;
+	tempC = i2cRead(1); // data byte
+	i2cStop(); // stop
+
+	return tempC;
+}
+
+// convert temperature from C to F
+int tempConvert(int tempC) {
+	int tempF = tempC * 1.8 + 32;
+	return tempF;
+}
+
+// read switch
+int readSW() {
+	int sw;
+
+	i2cStart(); // start
+	i2cWrite((MCP_OPCODE<<1) | WRITE); // opcode, r/w = 0;
+	i2cWrite(GPIOB); // address
+	i2cStop(); // stop
+	i2cStart(); // restart
+	i2cWrite((MCP_OPCODE<<1) | READ); // opcode, r/w = 1;
+	sw = i2cRead(1); // Dout stored in sw
+	i2cStop(); // stop
+
+	return sw;
+}
+
 // display numbers function
 int disp(int number) {
 	switch(number) {
@@ -104,19 +156,16 @@ int disp(int number) {
 	return 0b1000000;
 }
 
-// read temperature
-// read switch
-int main() {
-	int write = 0;
-	int read = 1;
+// display temperature function
 
-	config();
+
+
+int main() {
+	configLPC();
 	
     while(1) {
 
-    	// read 
-    	start();
-    	i2cWrite(i2cRead(1));
+
     	
       }
 }
